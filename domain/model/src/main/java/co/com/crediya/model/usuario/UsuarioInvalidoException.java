@@ -1,4 +1,4 @@
-package co.com.crediya.usecase.registrarusuario;
+package co.com.crediya.model.usuario;
 
 public class UsuarioInvalidoException extends RuntimeException {
 

@@ -1,8 +1,9 @@
 package co.com.crediya.api;
 
 import co.com.crediya.model.usuario.Usuario;
-import co.com.crediya.model.usuario.exceptions.UsuarioYaExisteException;
+import co.com.crediya.model.usuario.CorreoDuplicadoException;
 import co.com.crediya.usecase.registrarusuario.RegistrarUsuarioUseCase;
+import co.com.crediya.model.usuario.UsuarioInvalidoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(classes = TestConfig.class)
+@SpringBootTest(classes = TestConfig.class, properties = "spring.jackson.property-naming-strategy=SNAKE_CASE")
 class ApiRestTest {
 
     @Autowired
@@ -57,7 +58,7 @@ class ApiRestTest {
 
     @Test
     void shouldRegisterUsuarioAndReturnCreated() {
-        when(registrarUsuarioUseCase.execute(any(Usuario.class)))
+        when(registrarUsuarioUseCase.ejecutar(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         client.post()
@@ -71,17 +72,17 @@ class ApiRestTest {
                           "direccion": "Calle 10",
                           "telefono": "3001234567",
                           "correo_electronico": "ana@example.com",
-                          "salario_base": 2500000
+                          "salario_base": 2500000,
+                          "password": "Password123"
                         }
                         """)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$.nombres").isEqualTo("Ana")
-                .jsonPath("$.correo_electronico").isEqualTo("ana@example.com")
-                .jsonPath("$.salario_base").isEqualTo(2500000);
+                .jsonPath("$.correo_electronico").isEqualTo("ana@example.com");
 
-        verify(registrarUsuarioUseCase).execute(any(Usuario.class));
+        verify(registrarUsuarioUseCase).ejecutar(any(Usuario.class));
     }
 
     @Test
@@ -94,7 +95,8 @@ class ApiRestTest {
                           "nombres": "Ana",
                           "apellidos": "Pérez",
                           "correo_electronico": "ana@example.com",
-                          "salario_base": 15000000.01
+                          "salario_base": 15000000.01,
+                          "password": "Password123"
                         }
                         """)
                 .exchange()
@@ -103,7 +105,8 @@ class ApiRestTest {
 
     @Test
     void shouldReturnConflictWhenEmailIsAlreadyRegistered() {
-        when(registrarUsuarioUseCase.execute(any(Usuario.class))).thenThrow(new UsuarioYaExisteException());
+        when(registrarUsuarioUseCase.ejecutar(any(Usuario.class)))
+                .thenThrow(new CorreoDuplicadoException("ana@example.com"));
 
         client.post()
                 .uri("/api/v1/usuarios")
@@ -113,10 +116,34 @@ class ApiRestTest {
                           "nombres": "Ana",
                           "apellidos": "Pérez",
                           "correo_electronico": "ana@example.com",
-                          "salario_base": 2500000
+                          "salario_base": 2500000,
+                          "password": "Password123"
                         }
                         """)
                 .exchange()
                 .expectStatus().isEqualTo(409);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUseCaseRejectsUsuario() {
+        when(registrarUsuarioUseCase.ejecutar(any(Usuario.class)))
+                .thenThrow(new UsuarioInvalidoException("El usuario no es válido"));
+
+        client.post()
+                .uri("/api/v1/usuarios")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {
+                          "nombres": "Ana",
+                          "apellidos": "Pérez",
+                          "correo_electronico": "ana@example.com",
+                          "salario_base": 2500000,
+                          "password": "Password123"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.mensaje").isEqualTo("El usuario no es válido");
     }
 }

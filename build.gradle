@@ -10,6 +10,7 @@ allprojects {
         mavenCentral()
     }
     dependencies {
+        
     }
     // Force dependency versions to address reported vulnerabilities.
     configurations.configureEach {

@@ -1,7 +1,10 @@
 package co.com.crediya.usecase.registrarusuario;
 
 import co.com.crediya.model.usuario.Usuario;
-import co.com.crediya.model.usuario.exceptions.UsuarioYaExisteException;
+import co.com.crediya.model.usuario.CorreoDuplicadoException;
+import co.com.crediya.model.usuario.Rol;
+import co.com.crediya.model.usuario.UsuarioInvalidoException;
+import co.com.crediya.model.usuario.gateways.PasswordEncoderGateway;
 import co.com.crediya.model.usuario.gateways.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 
@@ -13,51 +16,58 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 class RegistrarUsuarioUseCaseTest {
 
     private final UsuarioRepository usuarioRepository = mock(UsuarioRepository.class);
-    private final RegistrarUsuarioUseCase useCase = new RegistrarUsuarioUseCase(usuarioRepository);
+    private final PasswordEncoderGateway passwordEncoder = mock(PasswordEncoderGateway.class);
+    private final RegistrarUsuarioUseCase useCase =
+            new RegistrarUsuarioUseCase(usuarioRepository, passwordEncoder);
 
     @Test
-    void registraUsuarioNormalizandoNombresYCorreo() {
+    void normalizaCamposEncriptaPasswordYAsignaRolPorDefecto() {
         Usuario usuario = usuarioValido(" Ana ", " Pérez ", " ANA@EXAMPLE.COM ", "15000000");
-        when(usuarioRepository.existsByCorreoElectronico("ana@example.com")).thenReturn(false);
-        when(usuarioRepository.save(org.mockito.ArgumentMatchers.any(Usuario.class)))
+        when(usuarioRepository.existePorCorreo("ana@example.com")).thenReturn(false);
+        when(passwordEncoder.encriptar("Password123")).thenReturn("password-encriptado");
+        when(usuarioRepository.guardar(any(Usuario.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Usuario registrado = useCase.execute(usuario);
+        Usuario registrado = useCase.ejecutar(usuario);
 
         assertEquals("Ana", registrado.getNombres());
         assertEquals("Pérez", registrado.getApellidos());
         assertEquals("ana@example.com", registrado.getCorreoElectronico());
-        verify(usuarioRepository).save(registrado);
+        assertEquals("password-encriptado", registrado.getPassword());
+        assertEquals(Rol.CLIENTE, registrado.getRol());
+        verify(usuarioRepository).guardar(registrado);
+    }
+
+    @Test
+    void rechazaCorreoInvalidoAntesDeConsultarRepositorio() {
+        assertThrows(UsuarioInvalidoException.class,
+                () -> useCase.ejecutar(usuarioValido("Ana", "Pérez", "correo-invalido", "1")));
+
+        verify(usuarioRepository, never()).existePorCorreo(any());
+    }
+
+    @Test
+    void rechazaSalarioFueraDelRangoAntesDeConsultarRepositorio() {
+        assertThrows(UsuarioInvalidoException.class,
+                () -> useCase.ejecutar(usuarioValido("Ana", "Pérez", "ana@example.com", "15000000.01")));
+
+        verify(usuarioRepository, never()).existePorCorreo(any());
     }
 
     @Test
     void rechazaCorreoDuplicado() {
-        when(usuarioRepository.existsByCorreoElectronico("ana@example.com")).thenReturn(true);
+        when(usuarioRepository.existePorCorreo("ana@example.com")).thenReturn(true);
 
-        assertThrows(UsuarioYaExisteException.class,
-                () -> useCase.execute(usuarioValido("Ana", "Pérez", "ana@example.com", "1")));
+        assertThrows(CorreoDuplicadoException.class,
+                () -> useCase.ejecutar(usuarioValido("Ana", "Pérez", "ana@example.com", "1")));
 
-        verify(usuarioRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
-    void rechazaCorreoInvalido() {
-        assertThrows(UsuarioInvalidoException.class,
-                () -> useCase.execute(usuarioValido("Ana", "Pérez", "correo-invalido", "1")));
-
-        verify(usuarioRepository, never()).existsByCorreoElectronico(org.mockito.ArgumentMatchers.anyString());
-    }
-
-    @Test
-    void rechazaSalarioFueraDelRango() {
-        assertThrows(UsuarioInvalidoException.class,
-                () -> useCase.execute(usuarioValido("Ana", "Pérez", "ana@example.com", "15000000.01")));
-
-        verify(usuarioRepository, never()).existsByCorreoElectronico(org.mockito.ArgumentMatchers.anyString());
+        verify(passwordEncoder, never()).encriptar(any());
+        verify(usuarioRepository, never()).guardar(any());
     }
 
     private Usuario usuarioValido(String nombres, String apellidos, String correo, String salario) {
@@ -66,6 +76,7 @@ class RegistrarUsuarioUseCaseTest {
                 .apellidos(apellidos)
                 .correoElectronico(correo)
                 .salarioBase(new BigDecimal(salario))
+                .password("Password123")
                 .build();
     }
 }

@@ -48,6 +48,8 @@ Este módulo es el más externo de la arquitectura, es el encargado de ensamblar
 
 ## Registro de usuarios
 
-El endpoint `POST /api/v1/usuarios` recibe un JSON con `nombres`, `apellidos`, `fecha_nacimiento` (formato `YYYY-MM-DD`), `direccion`, `telefono`, `correo_electronico` y `salario_base`. Los nombres, apellidos, correo y salario son obligatorios; el correo debe tener formato válido y no estar registrado, y el salario debe estar entre 0 y 15000000.
+El endpoint `POST /api/v1/usuarios` recibe un JSON con `nombres`, `apellidos`, `fecha_nacimiento` (formato `YYYY-MM-DD`), `direccion`, `telefono`, `correo_electronico`, `salario_base` y `password`. Los nombres, apellidos, correo, salario y contraseña son obligatorios; la contraseña debe tener mínimo 8 caracteres. El correo debe tener formato válido y no estar registrado, y el salario debe estar entre 0 y 15000000. Los nombres, apellidos y correo se normalizan antes de guardar el usuario.
 
-La respuesta exitosa usa el estado `201 Created`. Los datos se guardan en la base H2 basada en archivo `data/crediya-autenticacion`; los errores de validación se devuelven como `400 Bad Request` y los correos duplicados como `409 Conflict`.
+La respuesta exitosa usa el estado `201 Created` e incluye el id, nombres, apellidos, correo y rol; no devuelve la contraseña ni el salario. La contraseña se almacena cifrada con BCrypt. Los datos se guardan en PostgreSQL (`crediya`), que debe estar disponible en `localhost:5432`. Desde la carpeta raíz, inicia la API con `.\gradlew.bat :app-service:bootRun`; queda disponible en `http://localhost:8086`. Los errores de validación se devuelven como `400 Bad Request` y los correos duplicados como `409 Conflict`.
+
+Por defecto, CORS no habilita orígenes externos. Para permitir un frontend, define `CORS_ALLOWED_ORIGINS` con sus orígenes exactos separados por comas, por ejemplo `http://localhost:3000`.
