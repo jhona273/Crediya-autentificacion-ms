@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 
 @Configuration
 @EnableAutoConfiguration
-@Import({ApiRest.class, UsuarioController.class, UsuarioApiMapper.class, GlobalExceptionHandler.class})
+@Import({UsuarioController.class, UsuarioApiMapper.class, GlobalExceptionHandler.class})
 public class TestConfig {
 
     @Bean

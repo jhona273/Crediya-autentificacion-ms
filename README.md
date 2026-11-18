@@ -45,11 +45,3 @@ Los entry points representan los puntos de entrada de la aplicación o el inicio
 Este módulo es el más externo de la arquitectura, es el encargado de ensamblar los distintos módulos, resolver las dependencias y crear los beans de los casos de use (UseCases) de forma automática, inyectando en éstos instancias concretas de las dependencias declaradas. Además inicia la aplicación (es el único módulo del proyecto donde encontraremos la función “public static void main(String[] args)”.
 
 **Los beans de los casos de uso se disponibilizan automaticamente gracias a un '@ComponentScan' ubicado en esta capa.**
-
-## Registro de usuarios
-
-El endpoint `POST /api/v1/usuarios` recibe un JSON con `nombres`, `apellidos`, `fecha_nacimiento` (formato `YYYY-MM-DD`), `direccion`, `telefono`, `correo_electronico`, `salario_base` y `password`. Los nombres, apellidos, correo, salario y contraseña son obligatorios; la contraseña debe tener mínimo 8 caracteres. El correo debe tener formato válido y no estar registrado, y el salario debe estar entre 0 y 15000000. Los nombres, apellidos y correo se normalizan antes de guardar el usuario.
-
-La respuesta exitosa usa el estado `201 Created` e incluye el id, nombres, apellidos, correo y rol; no devuelve la contraseña ni el salario. La contraseña se almacena cifrada con BCrypt. Los datos se guardan en PostgreSQL (`crediya`), que debe estar disponible en `localhost:5432`. Desde la carpeta raíz, inicia la API con `.\gradlew.bat :app-service:bootRun`; queda disponible en `http://localhost:8086`. Los errores de validación se devuelven como `400 Bad Request` y los correos duplicados como `409 Conflict`.
-
-Por defecto, CORS no habilita orígenes externos. Para permitir un frontend, define `CORS_ALLOWED_ORIGINS` con sus orígenes exactos separados por comas, por ejemplo `http://localhost:3000`.

@@ -334,4 +334,6 @@ gradle-app.setting
 # -----
 *.hprof
 build-cache
-**/data/*.db
+
+applications/app-service/data/
+*.log
