@@ -13,4 +13,9 @@ public class BCryptPasswordEncoderAdapter implements PasswordEncoderGateway {
     public String encriptar(String passwordPlano) {
         return encoder.encode(passwordPlano);
     }
+
+    @Override
+    public boolean coincide(String passwordPlano, String passwordEncriptado) {
+        return encoder.matches(passwordPlano, passwordEncriptado);
+    }
 }
