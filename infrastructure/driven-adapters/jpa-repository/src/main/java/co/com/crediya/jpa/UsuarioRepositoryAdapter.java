@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
+import java.util.Optional;
 
 @Slf4j
 @Repository
@@ -37,6 +38,12 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
     @Override
     public boolean existePorCorreo(String correoElectronico) {
         return jpa.existsByCorreoElectronico(correoElectronico);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Usuario> buscarPorCorreo(String correoElectronico) {
+        return jpa.findByCorreoElectronico(correoElectronico).map(UsuarioMapper::toDomain);
     }
 
     private boolean esViolacionUnica(DataIntegrityViolationException exception) {

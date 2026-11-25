@@ -1,6 +1,7 @@
 package co.com.crediya.api;
 
 import co.com.crediya.model.usuario.CorreoDuplicadoException;
+import co.com.crediya.model.usuario.CredencialesInvalidasException;
 import co.com.crediya.model.usuario.UsuarioInvalidoException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -50,6 +51,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CorreoDuplicadoException.class)
     public ResponseEntity<Map<String, String>> manejarDuplicado(CorreoDuplicadoException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
+    }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<Map<String, String>> manejarCredencialesInvalidas(CredencialesInvalidasException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", e.getMessage()));
     }
 
     @ExceptionHandler(UsuarioInvalidoException.class)
